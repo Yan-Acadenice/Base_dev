@@ -1,12 +1,12 @@
-# filepath: /home/acadenice/centralis/docker-compose.yml
+# filepath: /home/acadenice/kevin/docker-compose.yml
 
 services:
-  database-yan:
+  database-kevin:
     image: postgres:latest
-    hostname: database_centralis
-    container_name: database-yan
+    hostname: database_kevin
+    container_name: database-kevin
     networks:
-      - centralis
+      - kevin
     restart: always
     volumes:
       - ./db:/var/lib/postgresql/data
@@ -15,55 +15,55 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${CO_DB_NAME}
 
-  frontend-yan:
+  frontend-kevin:
     build:
-      context: ./frontend-yan
+      context: ./frontend-kevin
       dockerfile: Dockerfile
-    container_name: frontend-yan
+    container_name: frontend-kevin
     environment:
       - API_URL=${API_URL}
       - DEV=${R_DEV}
       - CREATE_NEW_PROJECT=${R_CREATE_NEW_PROJECT}
-    hostname: frontend-yan
+    hostname: frontend-kevin
     restart: always
     volumes:
-      - ./frontend/app:/app:delegated
+      - ./frontend-kevin/app:/app
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=admin_proxy"
-      - "traefik.http.routers.frontend-yan-secure.entrypoints=websecure"
-      - "traefik.http.routers.frontend-yan-secure.rule=Host(`${PRENOM}-app.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.frontend-yan-secure.service=frontend-yan"
-      - "traefik.http.services.frontend-yan.loadbalancer.server.port=3000"
+      - "traefik.http.routers.frontend-kevin-secure.entrypoints=websecure"
+      - "traefik.http.routers.frontend-kevin-secure.rule=Host(`${PRENOM}-app.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend-kevin-secure.service=frontend-kevin"
+      - "traefik.http.services.frontend-kevin.loadbalancer.server.port=3000"
     networks:
-      - centralis
+      - kevin
 
   webdb:
     image: webdb/app
     container_name: webdb
     depends_on:
-      - database
+      - database-kevin
     networks:
-      - centralis
+      - kevin
     volumes:
       - "$HOME/.ssh:/root/.ssh:ro"
       - "$HOME/.webdb:/usr/src/app/static/version"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=admin_proxy"
-      - "traefik.http.routers.webdb-secure.entrypoints=websecure"
-      - "traefik.http.routers.webdb-secure.rule=Host(`${PRENOM}-db.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.webdb-secure.service=webdb"
-      - "traefik.http.services.webdb.loadbalancer.server.port=22071"
+      - "traefik.http.routers.webdb-kevin-secure.entrypoints=websecure"
+      - "traefik.http.routers.webdb-kevin-secure.rule=Host(`${PRENOM}-db.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.webdb-kevin-secure.service=webdb-kevin"
+      - "traefik.http.services.webdb-kevin.loadbalancer.server.port=22071"
 
-  api-yan:
+  api-kevin:
     build:
       context: ./core
       dockerfile: Dockerfile
-    container_name: api-yan
+    container_name: api-kevin
     depends_on:
-      - database
-    hostname: api-yan
+      - database-kevin
+    hostname: api-kevin
     restart: always
     volumes:
       - ./core/api:/api
@@ -74,7 +74,7 @@ services:
       - DB_USERNAME=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=${CO_DB_NAME}
-      - DB_HOST=database_centralis
+      - DB_HOST=database_kevin
       - DB_PORT=5432
       - DB_CONNECTION=pgsql
       - APP_NAME="Core Centralis"
@@ -82,13 +82,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=admin_proxy"
-      - "traefik.http.routers.core-secure.entrypoints=websecure"
-      - "traefik.http.routers.core-secure.rule=Host(`${PRENOM}-api.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.core-secure.service=core"
-      - "traefik.http.services.core.loadbalancer.server.port=8000"
+      - "traefik.http.routers.api-kevin-secure.entrypoints=websecure"
+      - "traefik.http.routers.api-kevin-secure.rule=Host(`${PRENOM}-api.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.api-kevin-secure.service=api-kevin"
+      - "traefik.http.services.api-kevin.loadbalancer.server.port=8000"
     networks:
-      - centralis
+      - kevin
 
 networks:
-  centralis:
-    external: true
+  kevin:
