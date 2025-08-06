@@ -1,4 +1,4 @@
-#!/bin/sh
+  #!/bin/sh
 set -e
 
 # Désactiver l'historique bash
@@ -9,18 +9,33 @@ unset HISTFILE
 export HISTCONTROL=ignorespace
 export HISTIGNORE="*"
 
+cd / 
+
 if [ "$CREATE_NEW_PROJECT" = "true" ]; then
   echo "Création d'un nouveau projet React..."
-  npx create-react-app temp-app
-  rm -rf app
-  mv temp-app app
+  
+  # Configurer Git temporairement pour éviter les erreurs
+  git config --global user.email "temp@example.com" 2>/dev/null || true
+  git config --global user.name "Temp User" 2>/dev/null || true
+  
+  # Créer le projet sans Git ou gérer l'erreur
+  npx create-react-app app --template typescript || {
+    echo "Erreur lors de la création, nettoyage et création sans Git..."
+    rm -rf app
+    npx create-react-app app --skip-git
+  }
+  
+  # Supprimer le dossier .git s'il existe
+#   rm -rf temp-app/.git
+  
+#   rm -rf temp-app/*
+#   rm -rf app
+#   mv temp-app app
 fi
 
 cd app
 npm install
 
-echo "Variables d'environnement configurées :"
-cat .env
 
 if [ "$DEV" = "true" ]; then
   echo "Lancement en mode développement avec Vite..."
