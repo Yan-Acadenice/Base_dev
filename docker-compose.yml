@@ -1,0 +1,94 @@
+# filepath: /home/acadenice/centralis/docker-compose.yml
+
+services:
+  database-yan:
+    image: postgres:latest
+    hostname: database_centralis
+    container_name: database-yan
+    networks:
+      - centralis
+    restart: always
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${CO_DB_NAME}
+
+  frontend-yan:
+    build:
+      context: ./frontend-yan
+      dockerfile: Dockerfile
+    container_name: frontend-yan
+    environment:
+      - API_URL=${API_URL}
+      - DEV=${R_DEV}
+      - CREATE_NEW_PROJECT=${R_CREATE_NEW_PROJECT}
+    hostname: frontend-yan
+    restart: always
+    volumes:
+      - ./frontend/app:/app:delegated
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=admin_proxy"
+      - "traefik.http.routers.frontend-yan-secure.entrypoints=websecure"
+      - "traefik.http.routers.frontend-yan-secure.rule=Host(`${PRENOM}-app.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend-yan-secure.service=frontend-yan"
+      - "traefik.http.services.frontend-yan.loadbalancer.server.port=3000"
+    networks:
+      - centralis
+
+  webdb:
+    image: webdb/app
+    container_name: webdb
+    depends_on:
+      - database
+    networks:
+      - centralis
+    volumes:
+      - "$HOME/.ssh:/root/.ssh:ro"
+      - "$HOME/.webdb:/usr/src/app/static/version"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=admin_proxy"
+      - "traefik.http.routers.webdb-secure.entrypoints=websecure"
+      - "traefik.http.routers.webdb-secure.rule=Host(`${PRENOM}-db.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.webdb-secure.service=webdb"
+      - "traefik.http.services.webdb.loadbalancer.server.port=22071"
+
+  api-yan:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: api-yan
+    depends_on:
+      - database
+    hostname: api-yan
+    restart: always
+    volumes:
+      - ./core/api:/api
+    environment:
+      - CREATE_NEW_PROJECT=${CO_CREATE_NEW_PROJECT}
+      - PROJECT_NAME=${CO_PROJECT_NAME}
+      - DB_DEV=${CO_DB_DEV}
+      - DB_USERNAME=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${CO_DB_NAME}
+      - DB_HOST=database_centralis
+      - DB_PORT=5432
+      - DB_CONNECTION=pgsql
+      - APP_NAME="Core Centralis"
+      - APP_URL="http://${PRENOM}-api.${DOMAIN_NAME}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=admin_proxy"
+      - "traefik.http.routers.core-secure.entrypoints=websecure"
+      - "traefik.http.routers.core-secure.rule=Host(`${PRENOM}-api.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.core-secure.service=core"
+      - "traefik.http.services.core.loadbalancer.server.port=8000"
+    networks:
+      - centralis
+
+networks:
+  centralis:
+    external: true
